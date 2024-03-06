@@ -21,18 +21,28 @@ def imgprocessor(folder_path, fixedbrightness=100, precision=0.5):
 
         lastenhance = str(float(imagebr[0]))
         i = 2
-
-        while enhancedbw[0] < fixedbrightness:
-            Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
-            print(Enhanceamount)
-            enhanced = ImageEnhance.Brightness(im).enhance(Enhanceamount)
-            enhancedbw = enhanced.convert("L")
-            enhancedbw = ImageStat.Stat(enhancedbw).rms
-            print(f"Enhanced from {lastenhance} to {Enhanceamount}")
-            print(f"Current brightness is {enhancedbw}")
-            lastenhance = enhancedbw
-            i = i + precision
-
+        if enhancedbw[0] < 100:
+            while enhancedbw[0] < fixedbrightness:
+                Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
+                print(Enhanceamount)
+                enhanced = ImageEnhance.Brightness(im).enhance(Enhanceamount)
+                enhancedbw = enhanced.convert("L")
+                enhancedbw = ImageStat.Stat(enhancedbw).rms
+                print(f"Enhanced from {lastenhance} to {Enhanceamount}")
+                print(f"Current brightness is {enhancedbw}")
+                lastenhance = enhancedbw
+                i = i + precision
+        elif enhancedbw[0] > 100:
+            while enhancedbw[0] > fixedbrightness:
+                Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
+                print(Enhanceamount)
+                enhanced = ImageEnhance.Brightness(im).enhance(Enhanceamount)
+                enhancedbw = enhanced.convert("L")
+                enhancedbw = ImageStat.Stat(enhancedbw).rms
+                print(f"Enhanced from {lastenhance} to {Enhanceamount}")
+                print(f"Current brightness is {enhancedbw}")
+                lastenhance = enhancedbw
+                i = i - precision/5
         enhanced.show()
 
 if __name__ == "__main__":
