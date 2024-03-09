@@ -3,3 +3,7 @@ GUI Features:
     -Configure precision
     -See before and after of the picture
     -Auto recommendations
+
+6 Images processed with nothing take 4.850866317749023 seconds
+6 Images processed with Threading take 3.4328486919403076 seconds (40% faster)
+multiprocessing doesn't work (EOFError: Ran out of input)
