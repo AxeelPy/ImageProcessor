@@ -162,9 +162,12 @@ class MyWindow(QMainWindow):
         returnage = imgprocessor(tx3 + "/" + file, tx1, tx2)
         print("img function returned", returnage)
         print(returnage["path"] + returnage["extension"])
-        self.returnlist.append(returnage)
-        self.imgnum.setText(str(self.index + 1) + " of " + str(len(self.returnlist)))
-        self.nextBtn.setEnabled(True)
+        if returnage["error"] is False:
+            self.returnlist.append(returnage)
+            self.imgnum.setText(str(self.index + 1) + " of " + str(len(self.returnlist)))
+            self.nextBtn.setEnabled(True)
+        else:
+            print("Error raised by imgprocessor. Ignoring that file")
 
     def BtnFunction(self):
         print("btn function")
@@ -186,31 +189,35 @@ class MyWindow(QMainWindow):
         self.returnlist = []
         self.index = 0
 
-        self.returnlist.append(imgprocessor(tx3+"/"+path[0], tx1, tx2))
+        firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
+        if firstresult["error"] is False:
+            self.returnlist.append(firstresult)
+            if not self.returnlist[self.index]["ofile"] is None:
+                print("Already exists")
+                self.pixmap = self.returnlist[self.index]["ofile"]
+                self.label1.setPixmap(self.pixmap)
+            else:
+                self.pixmap = QPixmap(
+                    self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
+                self.label1.setPixmap(self.pixmap)
+                self.returnlist[self.index]["ofile"] = self.pixmap
+            self.label1.ratio = self.pixmap.width() / self.pixmap.height()
+
+            if not self.returnlist[self.index]["efile"] is None:
+                print("Already exists")
+                self.pixmap = self.returnlist[self.index]["efile"]
+                self.label2.setPixmap(self.pixmap)
+            else:
+                self.pixmap = QPixmap(
+                    self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
+                self.label2.setPixmap(self.pixmap)
+                self.returnlist[self.index]["efile"] = self.pixmap
+            self.label2.ratio = self.pixmap.width() / self.pixmap.height()
+            self.nextBtn.setEnabled(True)
+        else:
+            print("Error in firstresult. Probably not an image")
         path.pop(0)
-        if not self.returnlist[self.index]["ofile"] is None:
-            print("Already exists")
-            self.pixmap = self.returnlist[self.index]["ofile"]
-            self.label1.setPixmap(self.pixmap)
-        else:
-            self.pixmap = QPixmap(
-                self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
-            self.label1.setPixmap(self.pixmap)
-            self.returnlist[self.index]["ofile"] = self.pixmap
-        self.label1.ratio = self.pixmap.width() / self.pixmap.height()
-
-        if not self.returnlist[self.index]["efile"] is None:
-            print("Already exists")
-            self.pixmap = self.returnlist[self.index]["efile"]
-            self.label2.setPixmap(self.pixmap)
-        else:
-            self.pixmap = QPixmap(
-                self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
-            self.label2.setPixmap(self.pixmap)
-            self.returnlist[self.index]["efile"] = self.pixmap
-        self.label2.ratio = self.pixmap.width() / self.pixmap.height()
-        self.nextBtn.setEnabled(True)
-
+# C:\Users\axel\Pictures\Screenshots
         threads = []
         for file in path:
             t = th.Thread(target=self.imgmp, args=(file, tx1, tx2, tx3))

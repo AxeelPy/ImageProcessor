@@ -15,10 +15,13 @@ def imgprocessor(file: str, fixedbrightness=100, precision=0.5):
         os.mkdir("temp/")
 
     print("on file", file)
-    im = PIL.Image.open(file)
-    bw = im.convert("L")
-    imagebr = ImageStat.Stat(bw)
-    imagebr = imagebr.rms
+    try:
+        im = PIL.Image.open(file)
+        bw = im.convert("L")
+        imagebr = ImageStat.Stat(bw)
+        imagebr = imagebr.rms
+    except Exception:
+        return {"error": True, "reason": "Probably not an image"}
 
     print("Dark image RMS:", imagebr, "\nFrom 1: " + str(float(imagebr[0]) / 100))
     Enhanceamount = 2 - float(imagebr[0]) / fixedbrightness
@@ -32,6 +35,9 @@ def imgprocessor(file: str, fixedbrightness=100, precision=0.5):
     i = 2
     if enhancedbw[0] < 100:
         while enhancedbw[0] < fixedbrightness:
+            if Enhanceamount > 200:
+                print("Loop detected")
+                break
             Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
             print(Enhanceamount)
             enhanced = ImageEnhance.Brightness(im).enhance(Enhanceamount)
