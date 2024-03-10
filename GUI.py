@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QPlainTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QPlainTextEdit, QLineEdit
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from main import imgprocessor
 import os
@@ -24,13 +25,13 @@ class MyWindow(QMainWindow):
         self.label2.setPixmap(self.pixmap)
         self.label2.ratio = self.pixmap.width() / self.pixmap.height()
 
-        self.text_area1 = QPlainTextEdit(self)
+        self.text_area1 = QLineEdit(self)
         self.text_area1.setPlaceholderText("Target brightness (optional) (default 100)")
 
-        self.text_area2 = QPlainTextEdit(self)
+        self.text_area2 = QLineEdit(self)
         self.text_area2.setPlaceholderText("Precision (optional) (default 0.5)")
 
-        self.text_area3 = QPlainTextEdit(self)
+        self.text_area3 = QLineEdit(self)
         self.text_area3.setPlaceholderText("Path (required)")
 
         self.runBtn = QPushButton("Run", self)
@@ -48,6 +49,22 @@ class MyWindow(QMainWindow):
         self.imgnum.move(10, int(int(self.width() * 0.3) / self.label2.ratio) + 20)
 
         self.resizeEvent = self.adjust_text_area_sizes
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Down:
+            if self.backBtn.isEnabled():
+                self.LastPic()
+        elif event.key() == Qt.Key_Up:
+            if self.nextBtn.isEnabled():
+                self.NextPic()
+        elif event.key() == 16777220:
+            print("enter key")
+            if self.text_area1.hasFocus():
+                self.text_area2.focusNextChild()
+            elif self.text_area2.hasFocus():
+                self.text_area3.focusNextChild()
+            elif self.text_area3.hasFocus():
+                self.BtnFunction()
 
     def adjust_text_area_sizes(self, event):
         window_width, window_height = self.width(), self.height()
@@ -86,7 +103,6 @@ class MyWindow(QMainWindow):
         self.label2.resize(int(window_width * 0.3), int(int(window_width * 0.3) / self.label2.ratio))
 
         self.imgnum.move(10, int(int(window_width * 0.3) / self.label1.ratio) + 20)
-
 
     def NextPic(self):
         self.backBtn.setEnabled(True)
@@ -170,13 +186,14 @@ class MyWindow(QMainWindow):
             print("Error raised by imgprocessor. Ignoring that file")
 
     def BtnFunction(self):
-        print("btn function")
-        tx1 = self.text_area1.toPlainText()
-        tx2 = self.text_area2.toPlainText()
-        tx3 = self.text_area3.toPlainText()
-        print("yes")
-        print(tx1, tx2, tx3)
-        path = os.listdir(tx3)
+        tx1 = self.text_area1.text()
+        tx2 = self.text_area2.text()
+        tx3 = self.text_area3.text()
+        if os.path.exists(tx3):
+            path = os.listdir(tx3)
+        else:
+            print("dir doesn't exist")
+            return
         try:
             if not tx1 == "":
                 tx1 = float(tx1)
@@ -188,35 +205,37 @@ class MyWindow(QMainWindow):
 
         self.returnlist = []
         self.index = 0
+        while True:
+            firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
+            if firstresult["error"] is False:
+                self.returnlist.append(firstresult)
+                if not self.returnlist[self.index]["ofile"] is None:
+                    print("Already exists")
+                    self.pixmap = self.returnlist[self.index]["ofile"]
+                    self.label1.setPixmap(self.pixmap)
+                else:
+                    self.pixmap = QPixmap(
+                        self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
+                    self.label1.setPixmap(self.pixmap)
+                    self.returnlist[self.index]["ofile"] = self.pixmap
+                self.label1.ratio = self.pixmap.width() / self.pixmap.height()
 
-        firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
-        if firstresult["error"] is False:
-            self.returnlist.append(firstresult)
-            if not self.returnlist[self.index]["ofile"] is None:
-                print("Already exists")
-                self.pixmap = self.returnlist[self.index]["ofile"]
-                self.label1.setPixmap(self.pixmap)
+                if not self.returnlist[self.index]["efile"] is None:
+                    print("Already exists")
+                    self.pixmap = self.returnlist[self.index]["efile"]
+                    self.label2.setPixmap(self.pixmap)
+                else:
+                    self.pixmap = QPixmap(
+                        self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
+                    self.label2.setPixmap(self.pixmap)
+                    self.returnlist[self.index]["efile"] = self.pixmap
+                self.label2.ratio = self.pixmap.width() / self.pixmap.height()
+                self.nextBtn.setEnabled(True)
+                path.pop(0)
+                break
             else:
-                self.pixmap = QPixmap(
-                    self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
-                self.label1.setPixmap(self.pixmap)
-                self.returnlist[self.index]["ofile"] = self.pixmap
-            self.label1.ratio = self.pixmap.width() / self.pixmap.height()
-
-            if not self.returnlist[self.index]["efile"] is None:
-                print("Already exists")
-                self.pixmap = self.returnlist[self.index]["efile"]
-                self.label2.setPixmap(self.pixmap)
-            else:
-                self.pixmap = QPixmap(
-                    self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
-                self.label2.setPixmap(self.pixmap)
-                self.returnlist[self.index]["efile"] = self.pixmap
-            self.label2.ratio = self.pixmap.width() / self.pixmap.height()
-            self.nextBtn.setEnabled(True)
-        else:
-            print("Error in firstresult. Probably not an image")
-        path.pop(0)
+                print("Error in firstresult. Probably not an image")
+                path.pop(0)
 # C:\Users\axel\Pictures\Screenshots
         threads = []
         for file in path:
