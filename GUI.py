@@ -1,8 +1,11 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QPlainTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QPlainTextEdit, QLineEdit
 from PyQt5.QtGui import QPixmap
 from main import imgprocessor
+from PyQt5.QtCore import Qt
 import os
+import shutil
 import threading as th
+import atexit
 
 
 class MyWindow(QMainWindow):
@@ -24,13 +27,13 @@ class MyWindow(QMainWindow):
         self.label2.setPixmap(self.pixmap)
         self.label2.ratio = self.pixmap.width() / self.pixmap.height()
 
-        self.text_area1 = QPlainTextEdit(self)
+        self.text_area1 = QLineEdit(self)
         self.text_area1.setPlaceholderText("Target brightness (optional) (default 100)")
 
-        self.text_area2 = QPlainTextEdit(self)
+        self.text_area2 = QLineEdit(self)
         self.text_area2.setPlaceholderText("Precision (optional) (default 0.5)")
 
-        self.text_area3 = QPlainTextEdit(self)
+        self.text_area3 = QLineEdit(self)
         self.text_area3.setPlaceholderText("Path (required)")
 
         self.runBtn = QPushButton("Run", self)
@@ -44,10 +47,32 @@ class MyWindow(QMainWindow):
         self.backBtn.clicked.connect(self.LastPic)
         self.backBtn.setEnabled(False)
 
-        self.imgnum = QLabel("placeholder", self)
+        self.imgnum = QLabel("", self)
         self.imgnum.move(10, int(int(self.width() * 0.3) / self.label2.ratio) + 20)
 
+        self.imgprc = QLabel("", self)
+        self.imgprc.move(10, int(int(self.width() * 0.3) / self.label2.ratio) + 20)
+
+        self.errormsg = QLabel("", self)
+        self.errormsg.setStyleSheet("color:red;")
+
         self.resizeEvent = self.adjust_text_area_sizes
+
+    def keyPressEvent(self, event):
+        print(event.key())
+        if event.key() == 16777220:
+            if self.text_area1.hasFocus():
+                self.text_area2.focusNextChild()
+            elif self.text_area2.hasFocus():
+                self.text_area3.focusNextChild()
+            elif self.text_area3.hasFocus():
+                self.BtnFunction()
+        elif event.key() == Qt.Key_Up:
+            if self.index + 1 < len(self.returnlist):
+                self.NextPic()
+        elif event.key() == Qt.Key_Down:
+            if not self.index - 1 < 0:
+                self.LastPic()
 
     def adjust_text_area_sizes(self, event):
         window_width, window_height = self.width(), self.height()
@@ -70,11 +95,11 @@ class MyWindow(QMainWindow):
                          text_area3_height)
 
         self.nextBtn.resize(int(window_width * 0.03), int(window_height * 0.05))
-        self.nextBtn.move(int(window_width - self.runBtn.width() - 10), 90 + text_area1_height + text_area2_height +
+        self.nextBtn.move(int(window_width - self.nextBtn.width() - 10), 90 + text_area1_height + text_area2_height +
                          text_area3_height + int(window_height * 0.05))
 
         self.backBtn.resize(int(window_width * 0.03), int(window_height * 0.05))
-        self.backBtn.move(int(window_width - self.runBtn.width() - window_width * 0.03 - 10), 90 + text_area1_height +
+        self.backBtn.move(int(window_width - self.nextBtn.width() - self.backBtn.width() - 10), 90 + text_area1_height +
                           text_area2_height + text_area3_height + int(window_height * 0.05))
 
         self.label1.setScaledContents(True)
@@ -86,7 +111,14 @@ class MyWindow(QMainWindow):
         self.label2.resize(int(window_width * 0.3), int(int(window_width * 0.3) / self.label2.ratio))
 
         self.imgnum.move(10, int(int(window_width * 0.3) / self.label1.ratio) + 20)
+        self.imgprc.move(10, int(int(window_width * 0.3) / self.label1.ratio) + self.imgnum.height() + 20)
 
+        self.errormsg.resize(int(window_width * 0.3), 25)
+        self.errormsg.move(int(window_width - self.runBtn.width()), 100 + text_area1_height +
+                          text_area2_height + text_area3_height)
+
+    def errorMsg(self, message):
+        self.errormsg.setText(message)
 
     def NextPic(self):
         self.backBtn.setEnabled(True)
@@ -94,7 +126,6 @@ class MyWindow(QMainWindow):
         self.index = self.index + 1
 
         if not self.returnlist[self.index]["ofile"] is None:
-            print("Already exists")
             self.pixmap = self.returnlist[self.index]["ofile"]
             self.label1.setPixmap(self.pixmap)
         else:
@@ -105,7 +136,6 @@ class MyWindow(QMainWindow):
         self.label1.ratio = self.pixmap.width() / self.pixmap.height()
 
         if not self.returnlist[self.index]["efile"] is None:
-            print("Already exists")
             self.pixmap = self.returnlist[self.index]["efile"]
             self.label2.setPixmap(self.pixmap)
         else:
@@ -128,7 +158,6 @@ class MyWindow(QMainWindow):
         self.index = self.index - 1
 
         if not self.returnlist[self.index]["ofile"] is None:
-            print("Already exists")
             self.pixmap = self.returnlist[self.index]["ofile"]
             self.label1.setPixmap(self.pixmap)
         else:
@@ -139,7 +168,6 @@ class MyWindow(QMainWindow):
         self.label1.ratio = self.pixmap.width() / self.pixmap.height()
 
         if not self.returnlist[self.index]["efile"] is None:
-            print("Already exists")
             self.pixmap = self.returnlist[self.index]["efile"]
             self.label2.setPixmap(self.pixmap)
         else:
@@ -165,60 +193,71 @@ class MyWindow(QMainWindow):
         if returnage["error"] is False:
             self.returnlist.append(returnage)
             self.imgnum.setText(str(self.index + 1) + " of " + str(len(self.returnlist)))
+            self.done = self.done + 1
+            self.imgprc.setText(f"{self.done+1}/{self.fromlen+1}\n{int((self.done)/(self.fromlen)*100)}% Done")
             self.nextBtn.setEnabled(True)
         else:
             print("Error raised by imgprocessor. Ignoring that file")
+            self.fromlen = self.fromlen - 1
 
     def BtnFunction(self):
+        self.errormsg.setText("")
         print("btn function")
-        tx1 = self.text_area1.toPlainText()
-        tx2 = self.text_area2.toPlainText()
-        tx3 = self.text_area3.toPlainText()
+        tx1 = self.text_area1.text()
+        tx2 = self.text_area2.text()
+        tx3 = self.text_area3.text()
         print("yes")
         print(tx1, tx2, tx3)
-        path = os.listdir(tx3)
+        if os.path.exists(tx3):
+            path = os.listdir(tx3)
+        else:
+            self.errorMsg("Path doesn't exist")
+            return
         try:
             if not tx1 == "":
                 tx1 = float(tx1)
             if not tx2 == "":
                 tx2 = float(tx2)
         except Exception:
-            print('not able to convert to float')
+            self.errorMsg("Fields 1 and 2 have to be numbers")
             return
 
         self.returnlist = []
         self.index = 0
 
-        firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
-        if firstresult["error"] is False:
-            self.returnlist.append(firstresult)
-            if not self.returnlist[self.index]["ofile"] is None:
-                print("Already exists")
-                self.pixmap = self.returnlist[self.index]["ofile"]
-                self.label1.setPixmap(self.pixmap)
-            else:
-                self.pixmap = QPixmap(
-                    self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
-                self.label1.setPixmap(self.pixmap)
-                self.returnlist[self.index]["ofile"] = self.pixmap
-            self.label1.ratio = self.pixmap.width() / self.pixmap.height()
+        while True:
+            firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
+            if firstresult["error"] is False:
+                self.returnlist.append(firstresult)
+                if not self.returnlist[self.index]["ofile"] is None:
+                    self.pixmap = self.returnlist[self.index]["ofile"]
+                    self.label1.setPixmap(self.pixmap)
+                else:
+                    self.pixmap = QPixmap(
+                        self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
+                    self.label1.setPixmap(self.pixmap)
+                    self.returnlist[self.index]["ofile"] = self.pixmap
+                self.label1.ratio = self.pixmap.width() / self.pixmap.height()
 
-            if not self.returnlist[self.index]["efile"] is None:
-                print("Already exists")
-                self.pixmap = self.returnlist[self.index]["efile"]
-                self.label2.setPixmap(self.pixmap)
+                if not self.returnlist[self.index]["efile"] is None:
+                    self.pixmap = self.returnlist[self.index]["efile"]
+                    self.label2.setPixmap(self.pixmap)
+                else:
+                    self.pixmap = QPixmap(
+                        self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
+                    self.label2.setPixmap(self.pixmap)
+                    self.returnlist[self.index]["efile"] = self.pixmap
+                self.label2.ratio = self.pixmap.width() / self.pixmap.height()
+                self.nextBtn.setEnabled(True)
+                break
             else:
-                self.pixmap = QPixmap(
-                    self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
-                self.label2.setPixmap(self.pixmap)
-                self.returnlist[self.index]["efile"] = self.pixmap
-            self.label2.ratio = self.pixmap.width() / self.pixmap.height()
-            self.nextBtn.setEnabled(True)
-        else:
-            print("Error in firstresult. Probably not an image")
+                print("Error in firstresult. Probably not an image")
+                path.pop(0)
         path.pop(0)
 # C:\Users\axel\Pictures\Screenshots
         threads = []
+        self.done = 0
+        self.fromlen = len(path)
         for file in path:
             t = th.Thread(target=self.imgmp, args=(file, tx1, tx2, tx3))
             threads.append(t)
@@ -232,7 +271,13 @@ class MyWindow(QMainWindow):
         self.adjust_text_area_sizes("change")
 
 
+def exitProcess():
+    if os.path.exists("temp/"):
+        shutil.rmtree("temp/")
+
+
 if __name__ == "__main__":
+    atexit.register(exitProcess)
     app = QApplication([])
     window = MyWindow()
     window.show()
