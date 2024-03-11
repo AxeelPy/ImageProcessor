@@ -253,6 +253,11 @@ class MyWindow(QMainWindow):
             else:
                 print("Error in firstresult. Probably not an image")
                 path.pop(0)
+                if len(path) == 1:
+                    self.imgnum.setText("")
+                    self.imgprc.setText("")
+                    self.errorMsg("Folder doesn't have any images")
+                    break
         path.pop(0)
 # C:\Users\axel\Pictures\Screenshots
         threads = []

@@ -33,9 +33,9 @@ def imgprocessor(file: str, fixedbrightness=100, precision=0.5):
     lastenhance = str(float(imagebr[0]))
     print("hello")
     i = 2
-    if enhancedbw[0] < 100:
+    if enhancedbw[0] < fixedbrightness:
         while enhancedbw[0] < fixedbrightness:
-            if Enhanceamount > 200:
+            if Enhanceamount > fixedbrightness:
                 print("Loop detected")
                 break
             Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
@@ -47,7 +47,7 @@ def imgprocessor(file: str, fixedbrightness=100, precision=0.5):
             print(f"Current brightness is {enhancedbw}")
             lastenhance = enhancedbw
             i = i + precision
-    elif enhancedbw[0] > 100:
+    elif enhancedbw[0] > fixedbrightness:
         while enhancedbw[0] > fixedbrightness:
             Enhanceamount = i - float(enhancedbw[0]) / fixedbrightness
             print(Enhanceamount)
