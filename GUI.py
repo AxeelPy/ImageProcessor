@@ -149,7 +149,7 @@ class MyWindow(QMainWindow):
 
         self.adjust_text_area_sizes("change")
 
-        if self.index + 1 == len(self.returnlist):
+        if self.index+1 == len(self.returnlist):
             self.nextBtn.setEnabled(False)
 
     def LastPic(self):
@@ -181,7 +181,7 @@ class MyWindow(QMainWindow):
 
         self.imgnum.setText(str(str(self.index+1) + " of " + str(len(self.returnlist))))
 
-        if self.index - 1 < 0:
+        if self.index-1 < 0:
             self.backBtn.setEnabled(False)
 
     def imgmp(self, file, tx1, tx2, tx3):
@@ -192,13 +192,18 @@ class MyWindow(QMainWindow):
         print(returnage["path"] + returnage["extension"])
         if returnage["error"] is False:
             self.returnlist.append(returnage)
-            self.imgnum.setText(str(self.index + 1) + " of " + str(len(self.returnlist)))
+            self.imgnum.setText(str(self.index+1) + " of " + str(len(self.returnlist)))
             self.done = self.done + 1
-            self.imgprc.setText(f"{self.done+1}/{self.fromlen+1}\n{int((self.done)/(self.fromlen)*100)}% Done")
+            self.imgprc.setText(f"{self.done}/{self.fromlen}\n{int((self.done)/(self.fromlen)*100)}% Done")
             self.nextBtn.setEnabled(True)
+            print(self.returnlist)
         else:
             print("Error raised by imgprocessor. Ignoring that file")
             self.fromlen = self.fromlen - 1
+
+    def loadingStage(self):
+        self.label1.setPixmap(QPixmap())
+        self.label2.setPixmap(QPixmap())
 
     def BtnFunction(self):
         self.errormsg.setText("")
@@ -222,47 +227,18 @@ class MyWindow(QMainWindow):
             self.errorMsg("Fields 1 and 2 have to be numbers")
             return
 
+        self.loadingStage()
         self.returnlist = []
-        self.index = 0
-
-        while True:
-            firstresult = imgprocessor(tx3+"/"+path[0], tx1, tx2)
-            if firstresult["error"] is False:
-                self.returnlist.append(firstresult)
-                if not self.returnlist[self.index]["ofile"] is None:
-                    self.pixmap = self.returnlist[self.index]["ofile"]
-                    self.label1.setPixmap(self.pixmap)
-                else:
-                    self.pixmap = QPixmap(
-                        self.returnlist[self.index]["path"] + "-original" + self.returnlist[self.index]["extension"])
-                    self.label1.setPixmap(self.pixmap)
-                    self.returnlist[self.index]["ofile"] = self.pixmap
-                self.label1.ratio = self.pixmap.width() / self.pixmap.height()
-
-                if not self.returnlist[self.index]["efile"] is None:
-                    self.pixmap = self.returnlist[self.index]["efile"]
-                    self.label2.setPixmap(self.pixmap)
-                else:
-                    self.pixmap = QPixmap(
-                        self.returnlist[self.index]["path"] + "-edited" + self.returnlist[self.index]["extension"])
-                    self.label2.setPixmap(self.pixmap)
-                    self.returnlist[self.index]["efile"] = self.pixmap
-                self.label2.ratio = self.pixmap.width() / self.pixmap.height()
-                self.nextBtn.setEnabled(True)
-                break
-            else:
-                print("Error in firstresult. Probably not an image")
-                path.pop(0)
-                if len(path) == 1:
-                    self.imgnum.setText("")
-                    self.imgprc.setText("")
-                    self.errorMsg("Folder doesn't have any images")
-                    break
-        path.pop(0)
+        self.index = 1
 # C:\Users\axel\Pictures\Screenshots
         threads = []
         self.done = 0
         self.fromlen = len(path)
+
+        self.imgmp(path[0], tx1, tx2, tx3)
+        path.pop(0)
+        self.LastPic()
+
         for file in path:
             t = th.Thread(target=self.imgmp, args=(file, tx1, tx2, tx3))
             threads.append(t)
@@ -271,7 +247,7 @@ class MyWindow(QMainWindow):
         #    t.join()
         #    print(f"thread {t.ident} has finished")
 
-        self.imgnum.setText(str(str(self.index+1) + " of " + str(len(self.returnlist))))
+        self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
 
         self.adjust_text_area_sizes("change")
 
