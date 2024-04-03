@@ -6,6 +6,7 @@ import os
 import shutil
 import threading as th
 import atexit
+import time
 
 
 class MyWindow(QMainWindow):
@@ -36,6 +37,10 @@ class MyWindow(QMainWindow):
         self.text_area3 = QLineEdit(self)
         self.text_area3.setPlaceholderText("Path (required)")
 
+        self.setFolderBtn = QPushButton(self)
+        self.setFolderBtn.setStyleSheet("QPushButton {border-image: url(resources/explorer.jpeg);}")
+        self.setFolderBtn.clicked.connect(self.BtnPath)
+
         self.runBtn = QPushButton("Run", self)
         self.runBtn.clicked.connect(self.BtnFunction)
 
@@ -57,6 +62,12 @@ class MyWindow(QMainWindow):
         self.errormsg.setStyleSheet("color:red;")
 
         self.resizeEvent = self.adjust_text_area_sizes
+
+    def BtnPath(self):
+        file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print(file)
+        if not file == "":
+            self.text_area3.setText(file)
 
     def keyPressEvent(self, event):
         print(event.key())
@@ -85,10 +96,13 @@ class MyWindow(QMainWindow):
         self.text_area2.resize(text_area2_width, text_area2_height)
         self.text_area2.move(window_width - text_area2_width - 10, 30 + text_area1_height)
 
-        text_area3_width = int(window_width * 0.3)
+        text_area3_width = int(window_width * 0.25)
         text_area3_height = int(window_height * 0.05)
         self.text_area3.resize(text_area3_width, text_area3_height)
-        self.text_area3.move(window_width - text_area3_width - 10, 50 + text_area1_height + text_area2_height)
+        self.text_area3.move(window_width - text_area3_width - int(window_width * 0.05) - 10, 50 + text_area1_height + text_area2_height)
+
+        self.setFolderBtn.resize(int(window_width * 0.05), int(window_height * 0.05))
+        self.setFolderBtn.move(window_width - int(window_width * 0.05) -10, 50 + text_area1_height + text_area2_height)
 
         self.runBtn.resize(int(window_width * 0.3), int(window_height * 0.05))
         self.runBtn.move(int(window_width - self.runBtn.width() - 10), 70 + text_area1_height + text_area2_height +
@@ -239,10 +253,14 @@ class MyWindow(QMainWindow):
         path.pop(0)
         self.LastPic()
 
+        start = time.time()
+
         for file in path:
             t = th.Thread(target=self.imgmp, args=(file, tx1, tx2, tx3))
             threads.append(t)
             t.start()
+
+        th.Thread(target=self.timemeasure, args=(threads, start,)).start()
         #for t in threads:
         #    t.join()
         #    print(f"thread {t.ident} has finished")
@@ -250,6 +268,13 @@ class MyWindow(QMainWindow):
         self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
 
         self.adjust_text_area_sizes("change")
+
+    def timemeasure(self, threads, start):
+        finished = all(not thread.is_alive() for thread in threads)
+        while not finished:
+            finished = all(not thread.is_alive() for thread in threads)
+        end = time.time()
+        print(f"Finished. It took {round(end-start, 2)}s.")
 
 
 def exitProcess():

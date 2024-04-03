@@ -83,7 +83,7 @@ if __name__ == "__main__":
                 except ValueError:
                     print('Error. Please enter a number')
                     continue
-            imgprocessor(inp, fixedbrightness=bright)
+            print(imgprocessor(inp, fixedbrightness=bright))
         elif tweak == "2":
             while True:
                 try:
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 except ValueError:
                     print('Error. Please enter a number')
                     continue
-            imgprocessor(inp, precision=precision)
+            print(imgprocessor(inp, precision=precision))
         elif tweak == "3":
             while True:
                 try:
@@ -105,9 +105,9 @@ if __name__ == "__main__":
                 except ValueError:
                     print('Error. Please enter a number')
                     continue
-            imgprocessor(inp, precision=precision, fixedbrightness=bright)
+            print(imgprocessor(inp, precision=precision, fixedbrightness=bright))
         elif tweak == "4":
-            imgprocessor(inp)
+            print(imgprocessor(inp))
         elif tweak == "exit":
             quit("Exit called")
         else:
