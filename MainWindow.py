@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QPushButton, QLineEdit, QFileDialog
 from PyQt5.QtGui import QPixmap
-from imgprocessor import imgprocessor
+from img_module_2 import imgprocessor
 from PyQt5.QtCore import Qt
 import os
 import threading as th
@@ -231,11 +231,12 @@ class MyWindow(QMainWindow):
             self.imgprc.setText(f"{self.done}/{self.fromlen}\n{int((self.done)/(self.fromlen)*100)}% Done")
 
             self.nextBtn.setEnabled(True)
-
+            return False
         else:
 
             print("Error raised by imgprocessor. Ignoring that file")
             self.fromlen = self.fromlen - 1
+            return True
 
     # Clears current images to avoid user confusion
     def loadingStage(self):
@@ -279,11 +280,14 @@ class MyWindow(QMainWindow):
         self.fromlen = len(self.path)
 
         # First image to load GUI with self.Lastpic()
-        self.imgmp(self.path[0])
-        self.path.pop(0)
-        self.LastPic()
-        self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
-        self.adjust_text_area_sizes("change")
+        while True:
+            status = self.imgmp(self.path[0])
+            self.path.pop(0)
+            if status == False:
+                self.LastPic()
+                self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
+                self.adjust_text_area_sizes("change")
+                break
 
         # Thread for all files in folder
         for file in self.path:
