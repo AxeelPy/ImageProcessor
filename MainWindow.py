@@ -4,7 +4,8 @@ from img_module_2 import imgprocessor
 from PyQt5.QtCore import Qt
 import os
 import threading as th
-
+import time
+# Time benchmark at Button function
 
 class MyWindow(QMainWindow):
 
@@ -279,6 +280,8 @@ class MyWindow(QMainWindow):
         self.done = 0
         self.fromlen = len(self.path)
 
+        start = time.time()
+
         # First image to load GUI with self.Lastpic()
         while True:
             status = self.imgmp(self.path[0])
@@ -294,3 +297,12 @@ class MyWindow(QMainWindow):
             t = th.Thread(target=self.imgmp, args=(file,))
             threads.append(t)
             t.start()
+
+        th.Thread(target=self.timemeasure, args=(threads, start,)).start()
+
+    def timemeasure(self, threads, start):
+        finished = all(not thread.is_alive() for thread in threads)
+        while not finished:
+            finished = all(not thread.is_alive() for thread in threads)
+        end = time.time()
+        print(f"Finished. It took {round(end-start, 2)}s.")

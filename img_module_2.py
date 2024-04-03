@@ -2,7 +2,7 @@ import PIL
 from PIL import Image, ImageStat, ImageEnhance
 import os
 import random
-
+# This module was 3x faster on a benchmark with more images (11 for this module, 7 for the other)
 
 def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
     if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
