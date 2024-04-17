@@ -5,6 +5,8 @@ from PyQt5.QtCore import Qt
 import os
 import threading as th
 import time
+from benchmark import timemeasure
+from btn_funcs import show_editBtn, editMode
 # Time benchmark at Button function
 
 class MyWindow(QMainWindow):
@@ -12,6 +14,8 @@ class MyWindow(QMainWindow):
     # Starting process
     def __init__(self):
         super().__init__()
+
+        self.run_state = False
 
         self.setWindowTitle("Resizable Text Areas")
         self.setGeometry(100, 100, 800, 600)
@@ -49,6 +53,9 @@ class MyWindow(QMainWindow):
         self.backBtn = QPushButton("-", self)
         self.backBtn.clicked.connect(self.LastPic)
         self.backBtn.setEnabled(False)
+
+        self.editBtn = QPushButton("...", self)
+        self.editBtn.clicked.connect(editMode, int(self.tx1))
 
         self.imgnum = QLabel("", self)
         self.imgnum.move(10, int(int(self.width() * 0.3) / self.label2.ratio) + 20)
@@ -119,6 +126,10 @@ class MyWindow(QMainWindow):
         self.backBtn.resize(int(window_width * 0.03), int(window_height * 0.05))
         self.backBtn.move(int(window_width - self.nextBtn.width() - self.backBtn.width() - 10), 90 + text_area1_height +
                           text_area2_height + text_area3_height + int(window_height * 0.05))
+
+        self.editBtn.resize(int(window_width * 0.04), int(window_width * 0.04))
+        self.editBtn.move(int(window_width - self.nextBtn.width() - self.backBtn.width() - 10), 110 + text_area1_height +
+                          text_area2_height + text_area3_height + self.backBtn.height() + int(window_height * 0.05))
 
         self.label1.setScaledContents(True)
         self.label1.move(0, 0)
@@ -263,6 +274,8 @@ class MyWindow(QMainWindow):
 
     # Main onclick run function
     def BtnFunction(self):
+        
+        self.run_state = True
 
         # Take content of buttons
         self.errormsg.setText("")
@@ -291,6 +304,8 @@ class MyWindow(QMainWindow):
                 self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
                 self.adjust_text_area_sizes("change")
                 break
+        
+        show_editBtn()
 
         # Thread for all files in folder
         for file in self.path:
@@ -298,11 +313,7 @@ class MyWindow(QMainWindow):
             threads.append(t)
             t.start()
 
-        th.Thread(target=self.timemeasure, args=(threads, start,)).start()
+        th.Thread(target=timemeasure, args=(self, threads, start,)).start()
 
-    def timemeasure(self, threads, start):
-        finished = all(not thread.is_alive() for thread in threads)
-        while not finished:
-            finished = all(not thread.is_alive() for thread in threads)
-        end = time.time()
-        print(f"Finished. It took {round(end-start, 2)}s.")
+
+    
