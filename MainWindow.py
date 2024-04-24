@@ -4,6 +4,7 @@ from img_module_2 import imgprocessor
 from PyQt5.QtCore import Qt
 import os
 import threading as th
+from task_assigner import btn_task
 import time
 from benchmark import timemeasure
 from btn_funcs import show_editBtn, editMode
@@ -16,7 +17,7 @@ class MyWindow(QMainWindow):
         super().__init__()
 
         self.run_state = False
-
+        self.tx1 = 0
         self.setWindowTitle("Resizable Text Areas")
         self.setGeometry(100, 100, 800, 600)
 
@@ -289,7 +290,6 @@ class MyWindow(QMainWindow):
         self.loadingStage()
         self.returnlist = []
         self.index = 1
-        threads = []
         self.done = 0
         self.fromlen = len(self.path)
 
@@ -305,13 +305,15 @@ class MyWindow(QMainWindow):
                 self.adjust_text_area_sizes("change")
                 break
         
-        show_editBtn()
-
-        # Thread for all files in folder
-        for file in self.path:
-            t = th.Thread(target=self.imgmp, args=(file,))
-            threads.append(t)
-            t.start()
+        show_editBtn(self)
+        
+        threads = btn_task(self, 4, self.path)
+        #Thread for all files in folder
+        #for file in self.path:
+        #   self.imgmp(file)
+            #t = th.Thread(target=self.imgmp, args=(file,))
+            #threads.append(t)
+            #t.start()
 
         th.Thread(target=timemeasure, args=(self, threads, start,)).start()
 

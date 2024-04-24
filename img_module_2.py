@@ -2,6 +2,7 @@ import PIL
 from PIL import Image, ImageStat, ImageEnhance
 import os
 import random
+from histogram import create_histogram
 # This module was 3x faster on a benchmark with more images (11 for this module, 7 for the other)
 
 def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
@@ -34,6 +35,8 @@ def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
     print("extension:", extension)
     enhanced.save("temp/"+save+"-edited"+extension)
     img.save("temp/" + save+"-original"+extension)
+    create_histogram(file, "temp/"+save+"-original-histogram")
+    create_histogram("temp/" + save+"-edited"+extension, "temp/"+save+"-edited-histogram")
 
     return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
 
