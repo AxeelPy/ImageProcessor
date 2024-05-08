@@ -1,24 +1,42 @@
 import threading as th
+import multiprocessing as mp
+import time
 
 def btn_task(self, threads: int, path):
-    thread_load = len(path) // threads
-    loaded_threads = 0
-    file_index = 0
     thread_list = []
-    while len(path) > file_index:
-        print(f"Loaded threads: {loaded_threads}")
-        for i in range(0, thread_load):
-            print(len(path), file_index)
-            if len(path)-1 <= file_index:
-                break
-            t = th.Thread(target=self.imgmp, args=(path[file_index]))
-            print(f"Adding thread of file {path[file_index]}")
-            file_index = file_index + 1
-            thread_list.append(t)
-            t.start()
-        loaded_threads = loaded_threads + 1
-            
-        if len(path) > file_index:
-            print(loaded_threads, threads)
-            break
+    list_forprocess = []
+    
+    for i in range(0, threads):
+        list_forprocess.append([])
+
+    list_index = 0
+    for file in path:
+        list_forprocess[list_index].append(file)
+        list_index = list_index + 1
+        if list_index == len(list_forprocess):
+            list_index = 0
+    
+    # Delete excess threads if any
+    temp_index = 0
+    while temp_index < len(list_forprocess):
+        if len(list_forprocess[temp_index]) == 0:
+            list_forprocess.remove(list_forprocess[temp_index])
+        else:
+            temp_index = temp_index + 1
+    
+    for l in list_forprocess:
+        t = th.Thread(target=btn_task_exec, args=(self, l,))
+        thread_list.append(t)
+        t.start()
+
+    # Waits for all threads to finish
+
+    while all(thread.is_alive() for thread in thread_list):
+        time.sleep(0.25)
+
+    print("All done")
     return thread_list
+
+def btn_task_exec(self, files: list):
+    for file in files:
+        self.imgmp(file)

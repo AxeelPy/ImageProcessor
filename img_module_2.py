@@ -5,7 +5,7 @@ import random
 from histogram import create_histogram
 # This module was 3x faster on a benchmark with more images (11 for this module, 7 for the other)
 
-def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
+def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, histogram_switch: bool = False):
     if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
     if fixedbrightness == "": fixedbrightness = 100
     if precision == "": precision = 0.5
@@ -14,7 +14,6 @@ def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
     if not os.path.exists("temp/"):
         os.mkdir("temp/")
 
-    print("on file", file)
     try:
         img = PIL.Image.open(file)
     except Exception:
@@ -23,20 +22,18 @@ def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
     img_bw = img.convert("L")
     img_rms = ImageStat.Stat(img_bw).rms
 
-    print(f"RMS: {img_rms}")
     enhanced = ImageEnhance.Brightness(img).enhance(fixedbrightness/float(img_rms[0]))
-    print(f"Target brightness is {fixedbrightness}")
 
     while True:
         save = str(random.randint(100000, 999999))
         if not os.path.exists("temp/"+save+"-original") and not os.path.exists("temp/"+save+"-edited"):
             break
     extension = "."+file.split(".")[-1]
-    print("extension:", extension)
     enhanced.save("temp/"+save+"-edited"+extension)
     img.save("temp/" + save+"-original"+extension)
-    create_histogram(file, "temp/"+save+"-original-histogram")
-    create_histogram("temp/" + save+"-edited"+extension, "temp/"+save+"-edited-histogram")
+    if histogram_switch:
+        create_histogram(file, "temp/"+save+"-original-histogram")
+        create_histogram("temp/" + save+"-edited"+extension, "temp/"+save+"-edited-histogram")
 
     return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
 

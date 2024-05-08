@@ -8,6 +8,8 @@ from task_assigner import btn_task
 import time
 from benchmark import timemeasure
 from btn_funcs import show_editBtn, editMode
+import multiprocessing as mp
+import asyncio
 # Time benchmark at Button function
 
 class MyWindow(QMainWindow):
@@ -233,7 +235,7 @@ class MyWindow(QMainWindow):
     def imgmp(self, file):
         
         # Main process, runs another module
-        returnage = imgprocessor(self.tx3 + "/" + file, self.tx1, self.tx2)
+        returnage = imgprocessor(self.tx3 + "/" + file, self.tx1, self.tx2, True)
 
         if returnage["error"] is False:
 
@@ -307,15 +309,19 @@ class MyWindow(QMainWindow):
         
         show_editBtn(self)
         
-        threads = btn_task(self, 4, self.path)
+        #threads = asyncio.run(btn_task(self, 4, self.path))
+        threads = th.Thread(target=btn_task, args=(self, 30, self.path,))
+        threads.start()
+
+        #threads = btn_task(self, 4, self.path)
         #Thread for all files in folder
         #for file in self.path:
         #   self.imgmp(file)
             #t = th.Thread(target=self.imgmp, args=(file,))
             #threads.append(t)
             #t.start()
-
         th.Thread(target=timemeasure, args=(self, threads, start,)).start()
 
-
+if __name__ == "__main__":
+    quit(print("You are not supposed to run this file. Run GUI.py instead"))
     
