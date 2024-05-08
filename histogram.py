@@ -25,6 +25,6 @@ if __name__ == "__main__":
 
     # show the plotting graph of an image 
 
-    plt.plot(histr) 
+    plt.plot(histr)
     plt.savefig("pablo")
-    plt.show() 
+    plt.show()

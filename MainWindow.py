@@ -308,10 +308,14 @@ class MyWindow(QMainWindow):
                 break
         
         show_editBtn(self)
+        # print("Hello World")
         
         #threads = asyncio.run(btn_task(self, 4, self.path))
-        threads = th.Thread(target=btn_task, args=(self, 30, self.path,))
+        threads = th.Thread(target=btn_task, args=(self, 30, self.path, True,))
         threads.start()
+
+        # histogram = mp.Process(target=assign_process, args=(self.path, "create_histogram",))
+        # histogram.start()
 
         #threads = btn_task(self, 4, self.path)
         #Thread for all files in folder

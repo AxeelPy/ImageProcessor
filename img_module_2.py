@@ -2,10 +2,9 @@ import PIL
 from PIL import Image, ImageStat, ImageEnhance
 import os
 import random
-from histogram import create_histogram
 # This module was 3x faster on a benchmark with more images (11 for this module, 7 for the other)
 
-def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, histogram_switch: bool = False):
+def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, histogram_switch: bool = True):
     if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
     if fixedbrightness == "": fixedbrightness = 100
     if precision == "": precision = 0.5
@@ -32,9 +31,7 @@ def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, hi
     enhanced.save("temp/"+save+"-edited"+extension)
     img.save("temp/" + save+"-original"+extension)
     if histogram_switch:
-        create_histogram(file, "temp/"+save+"-original-histogram")
-        create_histogram("temp/" + save+"-edited"+extension, "temp/"+save+"-edited-histogram")
-
+        return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
     return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
 
 
