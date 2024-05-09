@@ -4,7 +4,7 @@ import os
 import random
 # This module was 3x faster on a benchmark with more images (11 for this module, 7 for the other)
 
-def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, histogram_switch: bool = True):
+def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
     if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
     if fixedbrightness == "": fixedbrightness = 100
     if precision == "": precision = 0.5
@@ -30,8 +30,7 @@ def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5, hi
     extension = "."+file.split(".")[-1]
     enhanced.save("temp/"+save+"-edited"+extension)
     img.save("temp/" + save+"-original"+extension)
-    if histogram_switch:
-        return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
+    
     return {"error": False, "path": "temp/"+save, "extension": extension, "ofile": None, "efile": None}
 
 
