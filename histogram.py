@@ -4,6 +4,7 @@ import asyncio
 import numpy
 from copy import deepcopy
 # importing library for plotting 
+import histogram_edit
 from matplotlib import pyplot as plt 
 
 def create_histogram(image_path: str, save_path):
