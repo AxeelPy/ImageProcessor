@@ -19,6 +19,7 @@ def create_histogram(image_path: str, save_path):
     except Exception as e:
         print(f"Exception: {e}")
 
+
 async def find_middle(histogram_list):
     highest = 0
     for index in histogram_list:
@@ -78,6 +79,7 @@ async def max_point_differences(histogram_list, tops, depth: int = 5):
         point_differences.append(average)
     # print("Point differences:", i)
     return point_differences
+
 
 async def get_average(array):
     iterations = 1
