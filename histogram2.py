@@ -12,13 +12,15 @@ import threading as th
 from time import sleep
 
 class Image_Edit:
+
     def __init__(self, Module_Name, Image_path):
         self.Module_name = Module_Name
         self.path = Image_path
         self.image = cv2.imread(Image_path)
+        self.file_extension = "."+Image_path.split(".")[-1]
+        self.staged_changes = []
 
-    async def sRGBtoPerceivedBrightness(self, RGB):
-        start = time.time()  
+    async def sRGBtoPerceivedBrightness(self, RGB): 
         # ========= Convert to luminance value ======
         colors = [RGB[0] / 255, RGB[1] / 255, RGB[2] / 255]
         LuminanceValues = []
@@ -51,19 +53,13 @@ class Image_Edit:
 
     async def Get_Image_Brightness(self, NumArray):
         
-        start = time.time()
         NewNumArray = []
         for row in NumArray:
             TempRow = []
             for column in row:
                 TempRow = TempRow + await self.sRGBtoPerceivedBrightness(column)
             NewNumArray.append(TempRow)
-        print(NewNumArray)
-        print("")
-        print(NumArray)
-        print(sum(NumArray[0][0]))
-        end = time.time()
-        print(end-start)
+        self.Image_brightness = NewNumArray
 
     def Image_Processing_Assigner(self, processes: int = 4):
         
@@ -82,10 +78,121 @@ class Image_Edit:
         
         pool = []
         for process in range(0, processes):
-            pool.append(mp.Process(target=self.Change_Image, args=(10, segments[process], process)).start())
+            pool.append(mp.Process(target=self.Change_Image, args=(10, segments[process], process)))
+        [i.start() for i in pool]
 
-        th.Thread(target=self.regroup_image, args=(processes, pool,))
+        print(pool)
+        print(pool[0].is_alive())
+        th.Thread(target=self.regroup_image, args=(processes, pool,)).start()
 
+
+    async def increase_saturation(self, change, image):
+        
+        image_copy = deepcopy(image)
+
+        async def get_highest_numbers(tuple):
+            
+            red, green, blue = tuple[0], tuple[1], tuple[2]
+
+            if red >= green:
+                if red == green:
+                    if red > blue:
+                        return [[0, 1], 2]
+                    if red == blue:
+                        return [[0, 1, 2]]
+                    return [2, [0, 1]]
+                if red > blue:
+                    if blue > green:
+                        return [0, 2, 1]
+                    if blue == green:
+                        return [0, [1, 2]]
+                    return [0, 1, 2]
+                if red == blue:
+                    return [[0,2], 1]
+                return [2, 0, 1]
+
+            elif red >= blue:
+                if red == blue:
+                    return [1, [0, 2]]
+                if green > blue:
+                    return [1, 0, 2]
+                raise Exception(f"Unexpected result in get_highest_number function")
+
+            elif blue >= green:
+                if blue == green:
+                    return [[1, 2], 0]
+                return [2, 1, 0]
+            
+            return [1, 2, 0]        
+    
+        async def change_saturation(tuple, change=change):
+
+            if not -100 <= change <= 100:
+                raise Exception("The 'change' variable should be between -100 and 100")
+
+            # print(f"Old ass tuple; {tuple}")
+            highest_to_lowest_index = await get_highest_numbers(tuple)
+            plain_HtL_index = []
+
+
+            high = 15
+            medium = 14
+            low = 13
+            # All RGB values are different, like [0, 1, 2]
+            if len(highest_to_lowest_index) == 3:
+                h_change = change / 255 * high
+                m_change = change / 255 * medium
+                l_change = change / 255 * low
+                plain_HtL_index = highest_to_lowest_index
+
+            # 2 RGB values are the same
+            elif len(highest_to_lowest_index) == 2:
+                
+                # [[0, 1], 2]
+                if isinstance(highest_to_lowest_index[0], list):
+                    h_change = change / 255 * high
+                    m_change = change / 255 * medium
+                    l_change = change / 255 * low
+                    plain_HtL_index = [highest_to_lowest_index[0][0], highest_to_lowest_index[0][1], highest_to_lowest_index[1]]
+                
+                # [0, [1, 2]]
+                else:
+                    h_change = change / 255 * high
+                    m_change = change / 255 * medium
+                    l_change = change / 255 * low
+                    plain_HtL_index = [highest_to_lowest_index[0], highest_to_lowest_index[1][0], highest_to_lowest_index[1][1]]
+            
+            # [[0, 1, 2]]
+            elif len(highest_to_lowest_index) == 1:
+                h_change = change / 255 * high
+                m_change = change / 255 * medium
+                l_change = change / 255 * low
+                plain_HtL_index = [highest_to_lowest_index[0][0], highest_to_lowest_index[0][1], highest_to_lowest_index[0][2]]
+
+            # print(h_change, m_change, l_change)
+            # print(plain_HtL_index)
+            tuple[plain_HtL_index[0]] = h_change*tuple[plain_HtL_index[0]]
+            tuple[plain_HtL_index[1]] = m_change*tuple[plain_HtL_index[1]]
+            tuple[plain_HtL_index[2]] = l_change*tuple[plain_HtL_index[2]]
+            # print(f"New tuple: {tuple}")
+            return tuple
+
+        Saturated_image = []
+        print(type(image))
+        for row in list(image_copy):
+            temp_list = []
+            for column in row:
+                # print(f"Column before: {column}")
+                column = await change_saturation(column)
+                temp_list.append(column)
+                # print(f"Column after: {column}")
+            Saturated_image.append(temp_list)
+
+        cv2.imshow('image', numpy.uint8(Saturated_image))
+        cv2.waitKey(0)
+        if not os.path.exists("processed_images/"):
+            os.makedirs("processed_images/")
+        cv2.imwrite(f"processed_images/{self.Module_name}_{self.file_extension}", numpy.uint8(Saturated_image))
 
     def Change_Image(self, change, image, Process_Number: int):
 
@@ -111,18 +218,29 @@ class Image_Edit:
         #cv2.imshow('image',image)
         #cv2.waitKey(0)
 
-        print(f'processing_images/{Process_Number}_{self.Module_name}_segment.png')
+        print(f'processing_images/{Process_Number}_{self.Module_name}_segment{self.file_extension}')
 
         if not os.path.exists('processing_images/'):
             os.makedirs('processing_images/')
 
-        cv2.imwrite(f'processing_images/{Process_Number}_{self.Module_name}_segment.png', image)
+        cv2.imwrite(f'processing_images/{Process_Number}_{self.Module_name}_segment{self.file_extension}', image)
 
     def regroup_image(self, Processes, pool):
-        if any([i.is_alive for i in pool]):
-            sleep(0.125)
-        else:
-            print("done")
+        while True:
+            if any([i.is_alive() for i in pool]):
+                sleep(0.125)
+            else:
+                print("done")
+                break
+
+        refused_image = []
+        for i in range(0, Processes):
+            print(f"processing_images/{i}_{self.Module_name}_segment.png")
+            element = cv2.imread(f"processing_images/{i}_{self.Module_name}_segment{self.file_extension}")
+            refused_image = refused_image + list(element)
+        cv2.imshow('image', numpy.array(refused_image))
+        cv2.waitKey(0)
+
 
 if __name__ == "__main__":
 
@@ -130,7 +248,8 @@ if __name__ == "__main__":
     # numpy.set_printoptions(threshold=sys.maxsize)
 
     main = Image_Edit("main", 'images/rndm.png')
-    main.Image_Processing_Assigner()
+    asyncio.run(main.increase_saturation(25, main.image))
+    # main.Image_Processing_Assigner()
     # asyncio.run(Change_Image(img, 25))
     quit()
     # img[n][j] where n = width of image, it represents the ROW
