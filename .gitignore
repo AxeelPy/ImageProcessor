@@ -1,0 +1,5 @@
+__pycache__/
+temp/
+processed_images/
+processing_images/
+venv/
