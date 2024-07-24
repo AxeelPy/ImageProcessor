@@ -28,6 +28,7 @@ class ImageProcessor:
             return True
         
     def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
+        
         if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
         if fixedbrightness == "": fixedbrightness = 100
         if precision == "": precision = 0.5

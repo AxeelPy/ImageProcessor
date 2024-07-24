@@ -5,6 +5,7 @@ import multiprocessing as mp
 import os
 import threading as th
 import numpy
+from datetime import datetime
 
 # Expects a list in the format of NewNumArray in Get_Image_Brightness
 async def Get_Pixel_Average(BrightnessArray):
@@ -224,5 +225,8 @@ class Multiprocessing_Functions:
             refused_image = refused_image + list(element)
         cv2.imshow('image', numpy.array(refused_image))
         cv2.waitKey(0)
-        cv2.imwrite(f'processed_images/{_class.Module_name}_done{_class.file_extension}', numpy.array(refused_image))
-        return
+        file_time = datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
+        cv2.imwrite(f'temp/{file_time}-edited{_class.file_extension}', numpy.array(refused_image))
+        cv2.imwrite(f'temp/{file_time}-original{_class.file_extension}', numpy.array(refused_image))
+        self.cooked_image = numpy.array(refused_image)
+        self.returnage = {"error": False, "path": f"temp/{file_time}", "extension": _class.file_extension, "ofile": None, "efile": None}
