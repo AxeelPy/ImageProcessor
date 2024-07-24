@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QPushButton, QLineEdit, QFileDialog
 from PyQt5.QtGui import QPixmap
-from algorithms.algorithm_2.main import ImageProcessor
+from algorithms.algorithm_3.main import ImageProcessor
 from PyQt5.QtCore import Qt
 import os
 import threading as th
@@ -201,6 +201,7 @@ class MyWindow(QMainWindow):
 
         self.index = self.index - 1
 
+        print(self.returnlist)
         # Checking if original image is cached in returnlist
         if not self.returnlist[self.index]["ofile"] is None:
             self.pixmap = self.returnlist[self.index]["ofile"]
@@ -264,7 +265,7 @@ class MyWindow(QMainWindow):
         self.tx1 = self.text_area1.text()
         self.tx2 = self.text_area2.text()
         self.tx3 = self.text_area3.text()
-
+        print(self.tx1, self.tx2, self.tx3)
         self.BtnErrorCheck()
         
         # Preconfig
