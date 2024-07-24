@@ -11,6 +11,43 @@ import time
 import dependencies.JIT as JIT
 from numba.typed import List
 
+class ImageProcessor: 
+    def assigner(self, Image_path):
+        self.Module_name = "temp"
+        self.path = Image_path
+        self.image = cv2.imread(Image_path)
+        self.file_extension = "."+Image_path.split(".")[-1]
+        self.brightness = JIT.Get_Image_Brightness(self.image)
+
+        MachineList = List()
+        for l in self.brightness:
+            MachineList.append(l)
+        
+        self.average = JIT.Get_Pixel_Average(MachineList)
+        PROCESSING_CLASS = Multiprocessing_Functions(6)
+        # Formula is 50 / average * 6
+        SATURATION_CHANGE = 100/main.average*3
+        print(f"Saturation change is {SATURATION_CHANGE} points")
+
+        start = time.time()
+        
+        segments = asyncio.run(PROCESSING_CLASS.segment_image(main.image))
+        print(f"Average is {main.average}")
+        process_pool = []
+        index = 0
+        for segment in segments:
+            process = mp.Process(target=asrun, args=(increase_saturation, main, SATURATION_CHANGE, segment, index))
+            process_pool.append(process)
+            index += 1
+        [i.start() for i in process_pool]
+
+        thr = th.Thread(target=PROCESSING_CLASS.regroup_image, args=(main, process_pool,))
+        thr.start()
+        while thr.is_alive():
+            time.sleep(0.125)
+        end = time.time()
+        print(f"Process took {end-start} seconds") 
+
 class Image_Edit:
 
     def __init__(self, Module_Name, Image_path):
@@ -19,6 +56,8 @@ class Image_Edit:
         self.image = cv2.imread(Image_path)
         self.file_extension = "."+Image_path.split(".")[-1]
         self.staged_changes = []
+    
+    
 
 def asrun(func, *args):
     asyncio.run(func(*args))
