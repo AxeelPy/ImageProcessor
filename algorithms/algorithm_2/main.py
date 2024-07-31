@@ -6,10 +6,10 @@ import random
 
 class ImageProcessor:
     # Image processing thread
-    def assigner(MainClass, file):
+    def assigner(self, MainClass, file):
         
         # Main process, runs another module
-        returnage = ImageProcessor.imgprocessor(MainClass.tx3 + "/" + file, MainClass.tx1, MainClass.tx2)
+        returnage = self.imgprocessor(MainClass.tx3 + "/" + file, MainClass.tx1, MainClass.tx2)
 
         if returnage["error"] is False:
 
@@ -24,10 +24,12 @@ class ImageProcessor:
         else:
 
             print("Error raised by imgprocessor. Ignoring that file")
+            print(returnage["reason"])
             MainClass.fromlen = MainClass.fromlen - 1
             return True
         
-    def imgprocessor(file: str, fixedbrightness: float=100, precision: float=0.5):
+    def imgprocessor(self, file: str, fixedbrightness: float=100, precision: float=0.5):
+        
         if file == "": return {"error": True, "reason": "File path not given"}  # If error is True, there has to be a reason
         if fixedbrightness == "": fixedbrightness = 100
         if precision == "": precision = 0.5

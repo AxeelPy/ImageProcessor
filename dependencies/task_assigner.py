@@ -1,16 +1,9 @@
 import threading as th
 import multiprocessing as mp
 import time
-from histogram.histogram import create_histogram
 import asyncio
 
-
-def assign_histogram_creations(image_list):
-    for image in image_list:
-        create_histogram(image["path"]+"-original"+image["extension"], image["path"]+"-histogram-origin"+image["extension"])
-        create_histogram(image["path"]+"-edited"+image["extension"], image["path"]+"-histogram-edited"+image["extension"])
-
-def btn_task(self, threads: int, path, histogram: bool = False):
+def btn_task(self, threads: int, path):
     thread_list = []
     list_forprocess = []
     
@@ -41,14 +34,10 @@ def btn_task(self, threads: int, path, histogram: bool = False):
 
     while any(thread.is_alive() for thread in thread_list):
         time.sleep(0.25)
-    
-    if histogram:
-        print("Running histogram creations")
-        assign_histogram_creations(self.returnlist)
 
     print("All done")
     return thread_list
 
-def btn_task_exec(self, files: list, histogram: bool = True, prefix: str = "temp/"):
+def btn_task_exec(self, files: list, prefix: str = "temp/"):
     for file in files:
         self.algorithm.assigner(self, file)
