@@ -18,10 +18,13 @@ class MyWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.algorithm = ImageProcessor
+
+        self.algorithm = ImageProcessor()
+        self.SupportedExtensions = ["jpg", "png", "jpeg", "jfif"]
+        self.MULTIPROCESS = False
         self.run_state = False
         self.tx1 = 0
-        self.setWindowTitle("Resizable Text Areas")
+        self.setWindowTitle("Image Processor")
         self.setGeometry(100, 100, 800, 600)
 
         self.label1 = QLabel(self)
@@ -201,7 +204,6 @@ class MyWindow(QMainWindow):
 
         self.index = self.index - 1
 
-        print(self.returnlist)
         # Checking if original image is cached in returnlist
         if not self.returnlist[self.index]["ofile"] is None:
             self.pixmap = self.returnlist[self.index]["ofile"]
@@ -242,7 +244,11 @@ class MyWindow(QMainWindow):
     def BtnErrorCheck(self):
         
         if os.path.exists(self.tx3):
-            self.path = os.listdir(self.tx3)
+            self.path = []
+            tempPath = os.listdir(self.tx3)
+            for path in tempPath:
+                if path.split(".")[-1] in self.SupportedExtensions:
+                    self.path.append(path)
         else:
             self.errorMsg("Path doesn't exist")
             return
@@ -277,34 +283,53 @@ class MyWindow(QMainWindow):
 
         start = time.time()
 
-        # First image to load GUI with self.Lastpic()
-        while True:
-            status = self.algorithm.assigner(self, self.path[0])
-            self.path.pop(0)
-            if status == False:
-                self.LastPic()
-                self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
-                self.adjust_text_area_sizes("change")
-                break
-        
-        show_editBtn(self)
-        # print("Hello World")
-        
-        #threads = asyncio.run(btn_task(self, 4, self.path))
-        threads = th.Thread(target=btn_task, args=(self, 30, self.path, False,))
-        threads.start()
+        def ImageRun():
+            if self.MULTIPROCESS:
+                # First image to load GUI with self.Lastpic()
+                while True:
+                    status = self.algorithm.assigner(self, self.path[0])
+                    self.path.pop(0)
+                    if status == False:
+                        self.LastPic()
+                        self.index = 1
+                        self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
+                        self.adjust_text_area_sizes("change")
+                        break
+                threads = th.Thread(target=btn_task, args=(self, 30, self.path,))
+                threads.start()
+                show_editBtn(self)
+            else:
+                # First image to load GUI with self.Lastpic()
+                while True:
+                    status = self.algorithm.assigner(self, self.path[0])
+                    self.path.pop(0)
+                    if status == False:
+                        self.LastPic()
+                        self.index = 1
+                        self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
+                        self.adjust_text_area_sizes("change")
+                        break
+                show_editBtn(self)
+                while self.path:
+                    status = self.algorithm.assigner(self, self.path[0])
+                    if status == False:
+                        self.path.pop(0)
+                        self.index =+ 1
+                        self.imgnum.setText(str(str(self.index) + " of " + str(len(self.returnlist))))
+                        self.adjust_text_area_sizes("change")
 
-        # histogram = mp.Process(target=assign_process, args=(self.path, "create_histogram",))
-        # histogram.start()
 
-        #threads = btn_task(self, 4, self.path)
-        #Thread for all files in folder
-        #for file in self.path:
-        #   self.imgmp(file)
-            #t = th.Thread(target=self.imgmp, args=(file,))
-            #threads.append(t)
-            #t.start()
-        th.Thread(target=timemeasure, args=(self, threads, start,)).start()
+        t = th.Thread(target=ImageRun, args=())
+        t.start()
+        
+
+        
+
+        # while self.path:
+        #     self.algorithm.assigner(self, self.path[0])
+        #     self.path.pop(0)
+        
+        th.Thread(target=timemeasure, args=(self, t, start,)).start()
 
 if __name__ == "__main__":
     quit(print("You are not supposed to run this file. Run GUI.py instead"))

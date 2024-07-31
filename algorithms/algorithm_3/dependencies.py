@@ -6,8 +6,10 @@ import os
 import threading as th
 import numpy
 from datetime import datetime
-
+from . import JIT
+from memory_profiler import profile
 # Expects a list in the format of NewNumArray in Get_Image_Brightness
+@profile
 async def Get_Pixel_Average(BrightnessArray):
     total_brightness: float = 0
     total_length = sum([len(i) for i in BrightnessArray])
@@ -18,26 +20,11 @@ async def Get_Pixel_Average(BrightnessArray):
     print(total_brightness, total_length, len(BrightnessArray))
     return total_brightness / total_length
 
+@profile
 async def Get_Image_Brightness(NumArray):
 
-    async def sRGBtoPerceivedBrightness(RGB): 
-        # ========= Convert to luminance value ======
-        colors = [RGB[0] / 255, RGB[1] / 255, RGB[2] / 255]
-        LuminanceValues = []
-
-        for color in colors:
-            if color <= 0.04045:
-                LuminanceValues.append(color/12.92)
-            else:
-                LuminanceValues.append(numpy.power(((color+0.055)/1.055), 2.4))
-
-        Luminance = 0.2126 * LuminanceValues[0] + 0.7152 * LuminanceValues[1] + 0.0722 * LuminanceValues[2]
-
-        # ========== Find perceived brightness ============
-        if Luminance <= (216/24389):
-            return Luminance * (216/24389)
-        else:
-            return numpy.power(Luminance, (1/3)) * 116 - 16
+    def sRGBtoPerceivedBrightness(column):
+        return JIT.sRGBtoPerceivedBrightness(column)
     
     NewNumArray = []
     for row in NumArray:
@@ -47,42 +34,15 @@ async def Get_Image_Brightness(NumArray):
         NewNumArray.append(TempRow)
     return NewNumArray
 
-async def increase_saturation(_class, change, image, segment_index):
+@profile
+async def increase_saturation(_class, change, image, index):
 
     async def get_highest_numbers(tuple):
-        
-        red, green, blue = tuple[0], tuple[1], tuple[2]
-
-        if red >= green:
-            if red == green:
-                if red > blue:
-                    return [[0, 1], 2]
-                if red == blue:
-                    return [[0, 1, 2]]
-                return [2, [0, 1]]
-            if red > blue:
-                if blue > green:
-                    return [0, 2, 1]
-                if blue == green:
-                    return [0, [1, 2]]
-                return [0, 1, 2]
-            if red == blue:
-                return [[0,2], 1]
-            return [2, 0, 1]
-
-        elif red >= blue:
-            if red == blue:
-                return [1, [0, 2]]
-            if green > blue:
-                return [1, 0, 2]
-            raise Exception(f"Unexpected result in get_highest_number function")
-
-        elif blue >= green:
-            if blue == green:
-                return [[1, 2], 0]
-            return [2, 1, 0]
-        
-        return [1, 2, 0]        
+        try:
+            return await JIT.get_highest_numbers(tuple)
+        except Exception:
+            print("Exception ocurred, but nothing stops us")
+            return
 
     async def change_saturation(tuple, index: list, change=change):
 
@@ -108,6 +68,11 @@ async def increase_saturation(_class, change, image, segment_index):
         #    return tuple 
 
         highest_to_lowest_index = await get_highest_numbers(tuple)
+        
+        # if highest_to_lowest_index is None:
+        #     print("No change because of exception")
+        #     return tuple
+        
         plain_HtL_index = []
 
 
@@ -174,12 +139,24 @@ async def increase_saturation(_class, change, image, segment_index):
     # cv2.waitKey(0)
     if not os.path.exists("processing_images/"):
         os.makedirs("processing_images/")
-    cv2.imwrite(f"processing_images/{segment_index}_{_class.Module_name}_segment{_class.file_extension}", numpy.uint8(Saturated_image))
+    cv2.imwrite(f"processing_images/{index}_{_class.Image.name}_segment{_class.Image.extension}", numpy.uint8(Saturated_image))
 
 class Multiprocessing_Functions:
     
     def __init__(self, processes: int = 4):
         self.processes = processes
+
+    def Image_Processing_Assigner(self, _class, func, *args):
+        
+        pool = []
+        for process in range(0, self.processes):
+            pool.append(mp.Process(target=func, args=(*args,), kwargs={"process_num": process, "name": _class.Module_name}))
+        [i.start() for i in pool]
+
+        print(pool)
+        print(pool[0].is_alive())
+        self.regroup_image(_class, pool,)
+        return
 
     async def segment_image(self, image):
         Image_Length = len(image)
@@ -198,18 +175,6 @@ class Multiprocessing_Functions:
         
         return segments
 
-    def Image_Processing_Assigner(self, _class, func, *args):
-        
-        pool = []
-        for process in range(0, self.processes):
-            pool.append(mp.Process(target=func, args=(*args,), kwargs={"process_num": process, "name": _class.Module_name}))
-        [i.start() for i in pool]
-
-        print(pool)
-        print(pool[0].is_alive())
-        th.Thread(target=self.regroup_image, args=(_class, pool,)).start()
-
-
     def regroup_image(self, _class, pool):
         while True:
             if any([i.is_alive() for i in pool]):
@@ -220,13 +185,14 @@ class Multiprocessing_Functions:
 
         refused_image = []
         for i in range(0, self.processes):
-            print(f"processing_images/{i}_{_class.Module_name}_segment.png")
-            element = cv2.imread(f"processing_images/{i}_{_class.Module_name}_segment{_class.file_extension}")
-            refused_image = refused_image + list(element)
-        cv2.imshow('image', numpy.array(refused_image))
-        cv2.waitKey(0)
+            print(f"processing_images/{i}_{_class.Image.name}_segment.png")
+            if os.path.exists(f"processing_images/{i}_{_class.Image.name}_segment{_class.Image.extension}"):
+                element = cv2.imread(f"processing_images/{i}_{_class.Image.name}_segment{_class.Image.extension}")
+                refused_image = refused_image + list(element)
+            else:
+                print("Error detected, but the show goes on")
         file_time = datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
-        cv2.imwrite(f'temp/{file_time}-edited{_class.file_extension}', numpy.array(refused_image))
-        cv2.imwrite(f'temp/{file_time}-original{_class.file_extension}', numpy.array(refused_image))
-        self.cooked_image = numpy.array(refused_image)
-        self.returnage = {"error": False, "path": f"temp/{file_time}", "extension": _class.file_extension, "ofile": None, "efile": None}
+        cv2.imwrite(f'temp/{file_time}-original{_class.Image.extension}', numpy.array(_class.Image.raw))
+        cv2.imwrite(f'temp/{file_time}-edited{_class.Image.extension}', numpy.array(refused_image))
+        self.done = {"error": False, "path": f"temp/{file_time}", "extension": _class.Image.extension, "ofile": None, "efile": None}
+        return
