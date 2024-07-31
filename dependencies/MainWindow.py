@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QPushButton, QLineEdit, QFileDialog
 from PyQt5.QtGui import QPixmap
-from algorithms.algorithm_3.main import ImageProcessor
+from algorithms.algorithm_2.main import ImageProcessor
 from PyQt5.QtCore import Qt
 import os
 import threading as th
